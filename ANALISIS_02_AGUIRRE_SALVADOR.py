@@ -2,6 +2,7 @@
 #####funciones:
 
 
+#para ordenar rutas sin importar la direccion
 def checkExistence_AndOrAdd_unordered(dictArg, name1, name2):
     if (name1 in dictArg):
         dictArg[name1] = dictArg[name1] + 1
@@ -11,6 +12,7 @@ def checkExistence_AndOrAdd_unordered(dictArg, name1, name2):
         dictArg.update({name1: 1})
 
 
+#para ir reuniondo valores segun una referencia comun como pais o transporte
 def checkExistence_AndOrAdd(dictArg, name, value):
     if (name in dictArg):
         dictArg[name] = dictArg[name] + value
@@ -18,6 +20,7 @@ def checkExistence_AndOrAdd(dictArg, name, value):
         dictArg.update({name: 1})
 
 
+#ordena e imprime hasta el numero n en la lista
 def orderANDprintlist_till_n(dictArg, n):
     copyDict = dictArg.copy()
     copyDict = dict({
@@ -31,8 +34,49 @@ def orderANDprintlist_till_n(dictArg, n):
         if (idx > n): break
         #print(str(idx) + '. ' + key + ' : ' + str(copyDict[key]))
         num = '{:,}'.format(int(copyDict[key]))
-        print(idx,'. ',key,': ',num,sep='')
+        print(idx, '. ', key, ': ', num, sep='')
         idx = idx + 1
+
+
+#ordena e imprime hasta el porcentil n en la lista
+def orderANDprintlist_till_percentile(dictArg, percentile, totalValue):
+    stop = totalValue * percentile
+    copyDict = dictArg.copy()
+    copyDict = dict({
+        key: value
+        for key, value in sorted(
+            copyDict.items(), key=lambda item: item[1], reverse=True)
+    })
+
+    idx = 1
+    auxCounter = 0
+    for key in copyDict:
+        num = '{:,}'.format(int(copyDict[key]))
+        auxCounter += int(copyDict[key])
+        if (auxCounter > stop): break
+        print(idx, '. ', key, ': ', num, sep='')
+        idx = idx + 1
+
+#para responder la ultima pregunta de la consigna 3, diferenciando el
+# motivo por que se genera ese valor y el pais
+def creaListaPorMotivo(lineas, dictArg, direccionDeseada):
+    valorTotal = 0
+    for linea in lineas:
+        direccion = linea['direction']
+        #similar a arriba, pero ahora difiero motivo entre lista de paises
+        if (direccion != direccionDeseada): continue
+        if (direccion == "Imports"):
+            #claramente si se importa la demanda fue generada por el pais de destino
+            pais = linea['destination']
+        elif (direccion == "Exports"):
+            #viceversa
+            pais = linea['origin']
+        else:
+            print("error: " + direccion)
+        valor = int(linea['total_value'])
+        valorTotal += valor
+        checkExistence_AndOrAdd(dictArg, pais, valor)
+    return valorTotal
 
 
 ##########
@@ -68,6 +112,7 @@ for linea in lineas:
     ruta = origen + " - " + destino
     ruta2 = destino + " - " + origen
 
+    #aqui ya segun importacion o exportacion voy haciendo el conteo de las rutas
     if (direccion == "Imports"):
         checkExistence_AndOrAdd_unordered(lrd_Imp, ruta, ruta2)
     elif (direccion == "Exports"):
@@ -90,7 +135,8 @@ for linea in lineas:
     #simplemente saco los transportes usados y les voy agregando los valores
     medioTrans = linea['transport_mode']
     valor = int(linea['total_value'])
-    checkExistence_AndOrAdd(transportesPorValor,medioTrans ,valor)
+    #de una
+    checkExistence_AndOrAdd(transportesPorValor, medioTrans, valor)
 
 orderANDprintlist_till_n(transportesPorValor, 5)
 
@@ -100,6 +146,7 @@ print("**************************************")
 print("*************Consigna 3***************")
 print("---Paises que generan mayor valor de los movimientos")
 paisesPorValor = {}
+valorTotal = 0
 for linea in lineas:
     direccion = linea['direction']
     #saco los paises segun cual genera la demanda (por direccion), para así agregar
@@ -113,9 +160,30 @@ for linea in lineas:
     else:
         print("error: " + direccion)
     valor = int(linea['total_value'])
-    checkExistence_AndOrAdd(paisesPorValor,pais ,valor)
+    valorTotal += valor
+    checkExistence_AndOrAdd(paisesPorValor, pais, valor)
+print('El 80% del valor viene de los paises:')
+#obteniendo lista de paises por porcentil del valor
+orderANDprintlist_till_percentile(paisesPorValor, 0.8, valorTotal)
 
-numPaisesRelevantes = int(len(paisesPorValor) * 0.8)
-#orderANDprintlist_till_n(paisesPorValor, numPaisesRelevantes)
-print('El 80% es hasta (inclusivo) el pais número:',numPaisesRelevantes)
-orderANDprintlist_till_n(paisesPorValor, 500) #para ver cuantos paises hay
+#viendo bien la pregunta "en que grupo concentrarse?"
+# se entiende difiere entre paises que exportan e importan
+print("--------------------------------------")
+print("---------Por Importaciones------------")
+IMP_paisesPorValor = {}
+valorTotal = creaListaPorMotivo(lineas, IMP_paisesPorValor, 'Imports')
+print('El 80% del valor viene de los paises:')
+#obteniendo lista de paises por porcentil del valor
+orderANDprintlist_till_percentile(IMP_paisesPorValor, 0.8, valorTotal)
+#imprimiendo todos los paises
+#orderANDprintlist_till_percentile(IMP_paisesPorValor, 1, valorTotal)
+
+print("--------------------------------------")
+print("---------Por Exportaciones------------")
+EXP_paisesPorValor = {}
+valorTotal =creaListaPorMotivo(lineas, EXP_paisesPorValor, 'Exports')
+print('El 80% del valor viene de los paises:')
+#obteniendo lista de paises por porcentil del valor
+orderANDprintlist_till_percentile(EXP_paisesPorValor, 0.8, valorTotal)
+#imprimiendo todos los paises
+#orderANDprintlist_till_percentile(EXP_paisesPorValor, 1, valorTotal)
